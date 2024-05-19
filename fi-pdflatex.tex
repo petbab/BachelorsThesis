@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% I, the copyright holder of this work, release this work into the
-%% public domain. This applies worldwide. In some countries this may
+%% public domain. This applies worldwide. In some countries, this may
 %% not be legally possible; if so: I grant anyone the right to use
 %% this work for any purpose, without any conditions, unless such
 %% conditions are required by law.
@@ -21,7 +21,7 @@
                %% also print your thesis. For double-sided typesetting,
                %% use at least 120 g/m² paper to prevent show-through.
   nosansbold,  %% The `nosansbold` option prevents the use of the
-               %% sans-serif type face for bold text. Replace with
+               %% sans-serif typeface for bold text. Replace with
                %% `sansbold` to use sans-serif type face for bold text.
   nocolorbold, %% The `nocolorbold` option disables the usage of the
                %% blue color for bold text, instead using black. Replace
@@ -45,6 +45,8 @@
 ]{babel}
 
 \usepackage{paratype}
+
+\usepackage{minted}
 
 \usepackage{pgfplots}
 \usepgfplotslibrary{statistics}
@@ -102,8 +104,8 @@
   commentstyle    = \itshape\color{magenta},
   breaklines      = true,
 }
-\usepackage{floatrow} %% Putting captions above tables
-\floatsetup[table]{capposition=top}
+% \usepackage{floatrow} %% Putting captions above tables
+% \floatsetup[table]{capposition=top}
 \usepackage[babel]{csquotes} %% Context-sensitive quotation marks
 \usepackage{parskip}
 
@@ -115,12 +117,12 @@
 %% The \chapter* command can be used to produce unnumbered chapters:
 \chapter*{Introduction}
 %% Unlike \chapter, \chapter* does not update the headings and does not
-%% enter the chapter to the table of contents. I we want correct
+%% enter the chapter to the table of contents. If we want correct
 %% headings and a table of contents entry, we must add them manually:
 \markright{\textsc{Introduction}}
 \addcontentsline{toc}{chapter}{Introduction}
 
-Theses are rumoured to be \enquote{the capstones of education}, so
+Theses are rumored to be \enquote{the capstones of education}, so
 I decided to write one of my own. If all goes well, I will soon
 have a diploma under my belt. Wish me luck!
 
@@ -182,7 +184,7 @@ These programs can then be slotted into the \enquote{empty} stages of the OpenGL
 Furthermore, shaders are not limited to the rendering pipeline.
 OpenGL also provides compute shaders, which can be used for general GPU computation \cite{openglwiki-shader}.
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \includegraphics[height=0.75\linewidth]{images/RenderingPipeline.png}
     \caption{Diagram of the Rendering Pipeline. The blue boxes are programmable shader stages
@@ -201,7 +203,7 @@ are used to pass data between the pipeline stages \cite{learnopengl-triangle}. S
 \verb|gl_Position| output, while others provide optional flexibility in computation, e.g., the
 \verb|gl_Piontsize| output \cite{openglwiki-vertex-shader}.
 
-Another crucial part of GLSL is uniform variables. The explanation of the uniform storage qualifier
+Another crucial part of the GLSL is uniform variables. The explanation of the uniform storage qualifier
 from the OpenGL wiki states that uniforms are global values stored in a program object. Unlike
 shader inputs and outputs, they do not change between shader executions, thus making them
 uniform \cite{openglwiki-uniform}. While this explanation clearly outlines the core concept behind uniform variables, from
@@ -225,84 +227,84 @@ input vertices to output vertices.} \cite{openglwiki-vertex-shader}.
 This makes it clear that the purpose of the Vertex Shader is to
 transform individual vertices without modifying the overall number of them.
 
-The usual way to utilize
-the Vertex Shader is to reposition the vertices into world space and transform them with respect to
-the camera position. This altered vertex position is then passed onto the following stages via the
-built-in variable \verb|gl_Position| \cite{openglwiki-vertex-shader}. The following is an example
-of a basic Vertex Shader that accomplishes the task.
-\begin{verbatim}
-#version 330 core
-layout(location = 0) in vec3 pos;
+The usual way to utilize the Vertex Shader is to apply a series of transformations to the incoming vertex data.
+These transformations are carried out as matrix multiplications.
+They effectively move the data across a succession of coordinate systems. This is done to emulate the notion of a camera
+\cite[p.125-126]{opengl-book}. For simplicity, this section will consider only the transformations of vertex positions,
+although there are usually more vertex attributes.
 
+The initial coordinate system is called local (or object) space.
+The positions stored in vertex buffers are in this space.
+The coordinates are relative to the object's origin, usually its center. For example, vertex positions
+representing a square with a side length of 1 could look like this: $[-0.5,-0.5,0], [0.5,-0.5,0], [0.5,0.5,0], [-0.5,0.5,0]$
+\cite{learnopengl-coord-systems}.
+
+The next coordinate system to which the vertex positions are transformed is world space.
+This is done by multiplying local space positions with the model matrix.
+World space intuitively represents the physical space of a scene. World space coordinates
+determine an object's location relative to the world origin.
+The model matrix encapsulates all the transformations applied to an object to get it from local
+to world space. These are translation, rotation, and scaling \cite{learnopengl-coord-systems}.
+
+From world space, the vertex positions are transformed to view space using the view matrix.
+The coordinates in view space are relative to the position and orientation of the
+simulated camera. The transformation to view space involves translation and rotation \cite{learnopengl-coord-systems}.
+
+The final coordinate system is clip space, and the corresponding matrix is the projection matrix.
+This transformation manipulates the view space coordinates in such a way that all vertex positions
+that should be visible are mapped to the range of $[-1, 1]$.
+Clip space can be described by two parallel rectangular planes perpendicular to the camera orientation vector.
+These are referred to as near plane and far plane. The near plane can be thought of as a screen onto which the 3D space is projected.
+The far plane limits the visible distance. These two planes form a viewing volume that encompasses all visible objects.
+This volume is visualized in Figures \ref{fig:orthographic-frustum} and \ref{fig:perspective-frustum}.
+Its shape depends on the type of projection used.
+There are two main types of projection. The first is orthographic projection. In this case, the near and far planes
+are the same size, and the viewing volume is a prism. The downside of this projection is that it does not take into account
+perspective, making it unrealistic. This problem is solved by using perspective projection.
+This creates the effect of objects appearing smaller the further they are from the camera.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.5\textwidth]{images/orthographic_frustum.png}
+    \caption{Orthographic frustum \cite{learnopengl-coord-systems}.}
+    \label{fig:orthographic-frustum}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.5\textwidth]{images/perspective_frustum.png}
+    \caption{Perspective frustum \cite{learnopengl-coord-systems}.}
+    \label{fig:perspective-frustum}
+\end{figure}
+
+The clip space vertex positions are then passed to the following stages via the
+built-in \verb|gl_Position| variable \cite{openglwiki-vertex-shader}. The following is an example
+of a basic Vertex Shader\footnote{Lines beginning with "//" are comments}.
+\pagebreak
+\begin{minted}{glsl}
+// Specify the OpenGL version, in this case it is 3.3.
+#version 330 core
+// Declare vertex position as an input. This data
+// is read from the currently bound vertex buffer.
+layout(location = 0) in vec3 pos;
+// Declare the model, view, and projection matrix uniforms.
+// These are usually set on each frame.
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-
+// The main method is the entry point of execution.
 void main() {
+  // Transform the object space vertex position using
+  // matrix multiplication to clip space. Store the result
+  // in the built-in output position variable.
   gl_Position = projection * view * model * vec4(pos, 1.);
 }
-\end{verbatim}
+\end{minted}
 
 \subsubsection{Tessellation}
 In the context of the OpenGL rendering pipeline, tessellation is the process of subdividing groups of
-vertices (patches) into smaller primitives \cite{openglwiki-tessellation}. Therefore, tessellation can be used to dynamically add
-detail to meshes, making them look more realistic while keeping the cost of computation and
-memory low.
-
-Dr. Paone \cite{openglwiki-tessellation} thoroughly demonstrates the primary use case of tessellation
-shaders through a rendering exercise. Consider the rendering of a vast,
-high-resolution terrain represented by a triangle mesh. In order to achieve a high-quality render,
-This terrain would typically need to be stored as millions of vertices.
-The problem is that rendering that many vertices in every frame can heavily impact performance. Furthermore, a
-considerable amount of the detailed render is wasted because it is too far from the camera to be
-noticeable. Altogether, these performance issues can be discouraging.
-This is where tessellation comes in. Instead of a high-resolution terrain mesh, it is more
-efficient to use a low-resolution mesh and dynamically add detail on the GPU by using tessellation
-shaders. In this case, the amount of detail added will depend on the distance of each group of
-vertices from the camera. Consequently, parts of the mesh that are far away from the camera will
-remain low-resolution, and the closer ones will keep their desired detail. This optimization results in
-a drastic performance boost while preserving the quality of the rendered terrain \cite{learnopengl-tessellation}.
-
-The OpenGL tessellation process is split into three stages: the Tessellation Control Shader (TCS), a
-fixed-function tessellator, and the Tessellation Evaluation Shader (TES). In the OpenGL rendering
-pipeline, tessellation is optional and is considered active only if the Tessellation Evaluation Shader is
-deployed. Therefore, the TCS can only run when the TES is involved \cite{openglwiki-tessellation}.
-
-The first tessellation stage is the Tessellation Control Shader. This stage is programmable but can be
-omitted and replaced with a default implementation. The primary responsibilities of the Tessellation
-Control Shader are setting the tessellation level (i.e., how much tessellation to do), specifying patch
-size, and forwarding patch data to the Tessellation Evaluation Shader \cite{openglwiki-tcs}.
-
-The Tessellation Control Shader is executed on each vertex provided by the Vertex Shader. The TCS
-runs are then grouped into their vertices' corresponding patches. As a result, the shader invocations
-that fall into the same patch can communicate and read all vertex data within the patch \cite{openglwiki-tcs}.
-
-The next stage of the tessellation process is the fixed-function tessellator. This stage is not
-programmable, however, it provides three distinct tessellation algorithms based on the chosen
-tessellation primitive. The core responsibility of the tessellator is to subdivide patches of vertices
-into smaller segments by generating new intermediate vertices, thus producing a more detailed
-mesh \cite{openglwiki-tessellation}.
-
-The tessellator does not rely on the vertex data specified by the Tessellation Control Shader or the
-Vertex Shader. Its behavior only depends on the tessellation levels and primitives specified in the
-TCS and TES. The tessellation levels define the extent of the patch segmentation, i.e.,
-how many vertices to add. On the other hand, tessellation primitives dictate the shape of the
-resulting patch. There are three tessellation primitives available: triangles, quads (squares), and
-isolines, which are series of horizontal lines that fit into a square patch. The resulting relative vertex
-positions are then passed on to the Tessellation Evaluation Shader \cite{openglwiki-tessellation}.
-
-The last stage of the OpenGL tessellation process is the Tessellation Evaluation Shader. Similar to the
-Tessellation Control Shader, the TES is invoked for each vertex but can read data from the whole
-patch. By the time the TES is executed, most of the heavy lifting has already been done by the fixed-function tessellator. For that reason, this shader tends to be relatively simple \cite{openglwiki-tessellation}.
-
-Because the presence of the TES is the only requirement for activating the tessellation process, the
-TES first needs to specify the tessellation primitive to be used by the tessellator. The TES then
-receives the vertex data as input from the Vertex Shader or the optional Tessellation Control Shader.
-Besides that, the tessellated vertex coordinates produced by the tessellator are passed via the built-in variable \verb|gl_TessCoord|. The core responsibility of the TES is then to interpolate between
-the patch control points using the relative tessellated vertex coordinates and produce absolute vertex
-coordinates in the clip space. Notice that this transformation to clip space would typically be done by
-the Vertex Shader. Therefore, when using tessellation, the vertex coordinates should not be
-transformed in the Vertex Shader \cite{learnopengl-tessellation}\cite{openglwiki-tessellation}.
+vertices referred to as patches into smaller primitives \cite{openglwiki-tessellation}. Therefore, tessellation
+can be used to dynamically add detail to meshes, making them look more realistic while keeping
+the cost of computation and memory low. A deeper exploration of tessellation and
+its use cases is included in Appendix \ref{app:tessellation}: Tessellation.
 
 \subsubsection{Geometry Shader}
 The next stage in the OpenGL rendering pipeline is the Geometry shader. It takes place after the
@@ -323,56 +325,25 @@ of Vertex Post-Processing is essentially to prepare incoming data for the next s
 and Rasterization \cite{openglwiki-vertex-post-processing}.
 
 \subsubsection{Transform Feedback}
-The first part of the Vertex Post-Processing stage is Transform Feedback. It is an optional fixed-function stage.
+The first part of the Vertex Post-Processing stage is Transform Feedback. It is an optional stage.
 Therefore, it has to be explicitly switched on to be active. Furthermore, the computation
 performed in this stage cannot be specified to the same extent as in the customizable stages, such as by a shader program.
-However, it can be influenced by changing the state of the OpenGL state machine \cite{openglwiki-transform-feedback}.
+However, it can be influenced by changing the state of the OpenGL state machine. For example,
+the number of captured output variables can be specified
+by calling the \verb|glTransformFeedbackVaryings()| function \cite{openglwiki-transform-feedback}.
 
-The OpenGL Wiki \cite{openglwiki-transform-feedback} introduces the concept of Transform Feedback as
-\enquote{the process of capturing Primitives generated by the Vertex Processing step(s),
-recording data from those primitives into Buffer Objects.} This means that vertex data transformed by the previous stages
-in the rendering pipeline (i.e., Vertex, Tessellation, or Geometry shaders), which would normally go on to be rendered
-on a screen, can also be stored back into a vertex buffer on the GPU.
-
-One of the most intriguing use cases of Transform Feedback is efficiently rendering large-scale particle systems on the GPU.
-The solution for the problem of particle simulation is incredibly relevant to modern graphics. From water simulation
-to explosions and smoke, particle systems have grown to be exceedingly popular in state-of-the-art games. Therefore,
-most modern game engines have implemented solutions for custom particle systems generation.
-
-In the OGLdev tutorial series on modern OpenGL, Etay Meiri \cite{ogl-particle-system} dives deep into the practical
-side of Transform Feedback. He demonstrates its use by implementing a fireworks simulation computed on the GPU.
-Without Transform Feedback, particle simulation would have to be computed for each frame in the following way:
-\begin{enumerate}
-    \item On the CPU, modify vertex data by computing the next step of the simulation (e.g., apply gravity to particles).
-    \item Send the vertex data to the GPU.
-    \item Execute a draw command.
-\end{enumerate}
-This approach has one obvious flaw. Sending data representing potentially millions of particles from the CPU to the GPU
-is terribly expensive. The solution is to use Transform Feedback to compute the simulation steps on the GPU and store
-the result in a buffer, which can later be used to render an image. OpenGL has one limitation that makes this method
-a bit more convoluted. OpenGL does not allow for a buffer to be both written into and read out of in a single draw command.
-To solve this problem, Etay Meiri \cite{ogl-particle-system} introduces a second vertex buffer.
-Then, the computation taking place in each frame looks like this:
-\begin{enumerate}
-    \item On the GPU, modify vertex data by computing the next step of the simulation.
-    \item Store the updated data in buffer \textbf{A} using Transform Feedback without rendering it.
-    This can be done with \\\verb+glEnable(GL_RASTERIZER_DISCARD)+.
-    \item Read and render vertex data from buffer \textbf{B}.
-    \item Swap buffers.
-\end{enumerate}
-This approach has two substantial benefits. Firstly, it eliminates the need to send data from the CPU to the GPU
-on every frame. It has to be done only at the beginning of the simulation. Secondly, it takes advantage of the
-massive parallelism available on the GPU to accelerate the update of large amounts of particles. Even if the simulation
-is parallelized to run on multiple cores of the CPU, it still falls short of the GPU's parallel computing capabilities.
-
-Even though the implementation of particle systems is not a part of this thesis,
-it is a great opportunity for the future development of AGE.
+Transform Feedback is the process of intercepting vertex data transformed by previous stages
+in the rendering pipeline (i.e., Vertex, Tessellation, or Geometry shaders) and redirecting it
+back into a vertex buffer on the GPU \cite{openglwiki-transform-feedback}. A fascinating use case
+of Transform Feedback relevant to modern graphics is explored in detail in Appendix \ref{app:transform-feedback}:
+Transform Feedback.
 
 \subsection{Primitive Assembly}
 The next stage in the OpenGL rendering pipeline is Primitive Assembly.
 Primitive Assembly is a process of dividing incoming vertex data organized into primitives into a sequence
-of base primitives. For example, a line list sequence of 12 vertices will generate 11 line base primitives
-\cite{openglwiki-primitive-assembly}.
+of base primitives. For example, suppose a drawing command was issued that produced a line strip sequence of 12 vertices.
+Because each pair of neighbouring points in a line strip represents a line, the Primitive Assebly stage will output
+11 line base primitives \cite{openglwiki-primitive-assembly}.
 
 The vertices' coordinates sent to this stage are in clip space (sent via \verb|gl_Position|) \cite{openglwiki-vertex-post-processing}.
 This means that all coordinates of vertices that end up being visible on the screen are in the range of $[-1,1]$
@@ -381,8 +352,11 @@ parts of incoming primitives laying outside of the visible volume. Any primitive
 are discarded. Primitives stretching across the boundary may be split, or \enquote{clipped}, into multiple primitives
 that fit in the viewing volume \cite[p.12]{opengl-book}.
 
-After clipping, vertex coordinates are transformed using perspective division. This step makes objects that are
-further away from the projection plane appear smaller. Then, viewport transformation is applied, mapping coordinates
+After clipping, vertex coordinates are transformed using perspective division.
+When using perspective projection in the Vertex Processing stages, this step makes objects that are
+further away from the projection plane appear smaller. If orthographic projection is employed,
+perspective division does nothing.
+Then, viewport transformation is applied, mapping coordinates
 into the active viewport in window space \cite[p.12]{opengl-book}.
 
 \subsubsection{Face Culling}
@@ -396,13 +370,15 @@ are specified by three vertices, the order in which these vertices appear (e.g.,
 clockwise or counterclockwise, is the winding order \cite{openglwiki-face-culling}\cite{tizen-face-culling}.
 
 Then, the processed triangle primitives are categorized as back-facing or front-facing based on the apparent
-winding of the triangle vertices in window space. This is best described by figure \ref{fig:tizen-front-back-face}
-from the Tizen Docs \cite{tizen-face-culling}.
+winding of the triangle vertices in window space. This is best described by Figure \ref{fig:tizen-front-back-face}
+from the Tizen Docs \cite{tizen-face-culling}. The Figure demonstrates how the determinant
+is used to calculate the signed area of a triangle. Negative sign indicates CW winding,
+positive is CCW.
 
 \begin{figure}[H]
     \centering
     \includegraphics[height=0.32\linewidth]{images/tizen_front_back_face.png}
-    \caption{Winding order - categorizing front/back-facing triangles \cite{tizen-face-culling}}
+    \caption{Winding order -- categorizing front/back-facing triangles \cite{tizen-face-culling}}
     \label{fig:tizen-front-back-face}
 \end{figure}
 
@@ -418,9 +394,11 @@ may be influenced by the attributes of all the vertices making up the primitive 
 The way the attributes are interpolated can be specified by interpolation qualifiers in the Fragment Shader,
 which will be introduced in the next section. There are three basic interpolation qualifiers:
 \begin{itemize}
-    \item Flat - The value is not interpolated. All fragments take on the value of a single vertex in the primitive.
-    \item Noperspective - The value is linearly interpolated in window space.
-    \item Smooth - The value is interpolated correctly with respect to perspective.
+    \item Flat -- The value is not interpolated. All fragments take on the value of the provoking vertex
+    in the primitive\footnote{Each primitive contains a single provoking vertex.
+    The placement of the provoking vertex in the vertex stream is predetermined by the primitive type.}.
+    \item Noperspective -- The value is linearly interpolated in window space.
+    \item Smooth -- The value is interpolated correctly with respect to perspective.
 \end{itemize}
 The Smooth qualifier is set by default and is the right choice most of the time. It allows for seamless
 fragment position and texture coordinate calculation \cite{openglwiki-interpolation}.
@@ -431,39 +409,32 @@ This stage is comprised of just the Fragment Shader. Although most implementatio
 without a custom Fragment Shader, the default behavior is essentially useless. Therefore, this section will
 operate under the assumption that a user-defined Fragment Shader is present.
 
-The Fragment Shader is executed once for each fragment. Before going into further detail, it is worthwhile
-to disperse any confusion that might arise from the previous sentence. Specifically, one might think
-that the Fragment Shader runs once for each pixel in the framebuffer. This can be true. However, it is certainly
-not the case most of the time. To understand the Fragment Shader, it is crucial to recognize the difference
-between a pixel and a fragment. Fragments are generated by the Rasterizer from incoming primitives. On the other hand,
-pixels in a framebuffer are a predefined number of \enquote{slots}, in which a color value is written (among other values).
-These values are then mapped onto the physical pixels on a screen. Therefore, when multiple primitives overlap
-in window space, they generate fragments occupying the same pixels. In consequence,
-the Fragment Shader is executed multiple times per pixel \cite{openglwiki-fragment}.
-
+The Fragment Shader is executed at most once for each fragment generated by the Rasterizer\footnote{The fragment
+can be discarded by an early depth or stencil test. In that case, the Fragment Shader is not executed.}.
 There are various built-in inputs to the Fragment Shader. However, they are not needed for basic usage of the
 Fragment Shader as presented in this thesis. The most useful inputs are user-defined varying variables,
 such as world position, normal, and tangent. These are interpolated as explained in the previous section.
 
 The Fragment Shader, in its simplest form, sets the final fragment color. The following is an example
 of a basic Fragment Shader that sets the four-component color of its fragment.
-\begin{verbatim}
+\begin{minted}{glsl}
+// Specify the OpenGL version
 #version 330 core
-
+// Declare the Fragment Shader output variable.
+// In this case, it is the fragment color.
 out vec4 fragColor;
-
+// The main function is the entry point for execution.
 void main() {
+  // Set the output variable to a constant color value.
   fragColor = vec4(0.2, 0.8, 1., 1.);
 }
-\end{verbatim}
+\end{minted}
 
 The bulk of the computation performed in Fragment Shaders is often approximating light interactions at objects' surfaces.
 The methods used for these calculations will be explored in the following Lighting chapter.
 
 \subsection{Per-Fragment Operations}
 Before diving into Per-Fragment Operations, it is crucial to understand the concept of a framebuffer.
-OpenGL framebuffers and their plethora of uses are a vast topic worthy of a whole chapter.
-However, I will condense it to only a few sentences of relevant information.
 At its core, a framebuffer is used to store 2D arrays of pixel data that can later be displayed on the screen.
 This data can consist of color, depth, and stencil values, however, more data can be added using framebuffer
 attachments. There is a default framebuffer provided by the system which facilitates drawing to the screen by default \cite{opengl-spec}.
@@ -472,39 +443,29 @@ The final stage of the OpenGL rendering pipeline before pixels can appear on a s
 At this point, the fragment data necessary for
 rendering has been generated by the preceding Fragment Shader. In this stage, there are a number
 of optional steps operating on the incoming fragments before they are stored as pixels in a framebuffer.
-These can be enabled or disabled by changing the OpenGL state.
-The following is a summary of the noteworthy Per-Fragment Operations in the order they are executed
-\cite[p.46]{opengl-superbible}.
+These can be enabled or disabled by changing the OpenGL state \cite[p.46]{opengl-superbible}.
 
-\begin{enumerate}
-    \item \textbf{The Scissor Test}
+The first operation is the Scissor Test. It can discard fragments that do not belong to a specified rectangular area.
+After that, the Stencil Test takes place. It is only executed if there is a stencil buffer attached to
+the current framebuffer. A fragment may be discarded based the comparison of its stencil value
+to the value present in the stencil buffer. Depending on the result, the stencil value in the buffer
+may be modified. Both the comparison and modification function are specifiable by the user
+\cite[p.504-506]{opengl-book}.
 
-    can discard fragments that do not belong to a specified rectangular area.
+The next operation is the Depth Buffer Test. If there is a depth buffer attached to the current framebuffer,
+it keeps track of the distance between pixels and the viewing plane. Each fragment's depth value
+is compared to the value in the depth buffer. If the test passes, the value is overwritten.
+Typically, fragments further from the viewing plane are discarded. However,
+a different comparison function may be selected by the user \cite[p.510]{opengl-book}.
 
-    \item \textbf{The Stencil Test,}
-
-    similar to the Scissor Test, can discard fragments based on their location. However, it is more customizable,
-    as the shape of the stencil is determined by per-pixel stencil data.
-    
-    \item \textbf{The Depth Buffer Test}
-
-    discards fragments depending on their depth value. Typically, fragments further from the viewing plane are discarded.
-    
-    \item \textbf{Blending}
-
-    can modify the color of the incoming fragment based on the existing pixel value in the framebuffer.
-    It can be used to render translucent objects such as glass.
-\end{enumerate}
-
-The Depth Buffer Test and Blending operations are highly customizable. The user can influence the way these
-steps function by changing the OpenGL state \cite[p.46]{opengl-superbible}.
-
-\chapter{Lighting}
-\section{Phong}
-\section{Physically Based Rendering}
+The last notable operation is Blending. After a fragment passes all the previous tests,
+its color is written into the framebuffer. However, if blending is enabled,
+the fragment color is combined with the existing pixel color.
+Both the operation with which the values are combined and the ratios of their contributions
+may be specified by the user. A typical use case of blending is rendering translucent objects such as glass \cite[p.251-256]{opengl-book}.
 
 \chapter{Materials}
-Shaders are an incredibly powerful tool, but by themselves, they don't provide the best user experience.
+Shaders are an incredibly powerful tool, but by themselves, they do not provide the best user experience.
 That is why modern game engines provide a layer of abstraction on top of shaders called materials.
 
 The Unreal Engine documentation website \cite{ue-materials} introduces the concept of materials with
@@ -514,20 +475,130 @@ in a rendered scene. This sounds a lot like what shaders are used for. The probl
 by an example.
 
 Imagine rendering a scene displaying a game of pool. On the pool table, there are many balls.
-They all have the same physical properties, meaning the same amount of light reflection, refraction, and absorption occurs
-at their surfaces. The only difference is in their color. If one would use shaders directly to render the objects, sixteen separate
+They all have the same physical properties. The only difference is in their color.
+If one would use shaders directly to render the objects, sixteen separate
 shaders executing almost the same computation would need to be created to display just a couple of balls on a table.
 This approach has enormous deficiencies in both usability and performance.
 The material layer of abstraction solves this problem by allowing users to parameterize shaders,
 thus making them reusable across objects with similar physical properties. With this in mind, instead of creating sixteen
 complex lighting shaders, a single shader is referenced by sixteen lightweight materials, each storing its own value
-of the shader parameter.
+of the shader parameter -- in this case, the color.
 
 After reading the previous chapter about shaders, it should come as no surprise that behind the scenes,
 shader parameters are actually just uniform variables. These are then simply set by materials when rendering.
 
 Materials are a vital part of modern game engines. Therefore, as a part of this thesis, materials have also been added to AGE.
-They can be accessed using the material system (see \cite{material-system-hpp}).
+They can be accessed using the material system located in the \textit{gfx} module.
+
+\chapter{Lighting}
+Lighting is a crucial aspect of modern graphics. The nature of the chosen lighting algorithm can vastly impact
+the quality of the rendered scene. This thesis implements two approaches to lighting: Phong Lighting and
+Physically Based Rendering.
+
+In the real world, the color of a physical surface, as the human eye perceives it, depends on the
+energy distribution of photons reaching the retina. These photons may be emitted by multiple light sources.
+When photons reach a surface, some are absorbed, and some are reflected.
+The character of these interactions is determined by the physical properties of the surface.
+Simulating the exact physics of real-world lighting is currently not possible. Therefore,
+modern lighting algorithms simply aim to approximate it \cite[p.207]{opengl-book}.
+
+\section{Phong Lighting}
+The first lighting algorithm implemented in this thesis is Phong Lighting.
+It approximates light by splitting it into three components.
+
+The first is ambient. Ambient illumination represents the light that has been scattered
+in a scene to a degree that it is impossible to determine its direction and origin.
+Adding ambient lighting to a scene results in all surfaces being slightly visible
+even if they are not directly exposed
+to light sources. Without it, they would be completely dark \cite[p.208]{opengl-book}.
+
+The next light component is diffuse light. This tends to be the most significant light component.
+It is the light that comes from a specific direction and when reaching the surface,
+it scatters uniformly in all directions. The extent to which diffuse lighting affects
+a surface's color depends on the angle between the light's direction and the surface normal.
+This angle is illustrated in Figure \ref{fig:diffuse}. As the angle decreases,
+the diffuse light's contribution increases \cite{phong}\cite[p.208]{opengl-book}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/diffuse_light.png}
+    \caption{Diffuse light calculation \cite{learnopengl-lighting}.}
+    \label{fig:diffuse}
+\end{figure}
+
+The last component of the Phong Lighting model is specular light.
+Similar to diffuse light, specular light comes from a specific direction.
+However, unlike diffuse light, it has a preferred reflection direction.
+Therefore, this component also depends on the viewing angle relative to the surface.
+The more the light's preferred reflection and the camera are aligned, the
+more significant the specular light is. All the components necessary for this
+computation are depicted in Figure \ref{fig:specular} \cite{phong}\cite[p.208]{opengl-book}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/specular_light.png}
+    \caption{Specular light calculation \cite{learnopengl-lighting}.}
+    \label{fig:specular}
+\end{figure}
+
+After calculating all the light's components, the results are multiplied by the light's color.
+Then, to apply the light to a surface, the individual light components are multiplied
+by the corresponding material color components, i.e., material ambient, diffuse, and specular colors.
+It is important to note that to avoid unrealistic lighting, material specular color should be a shade of gray,
+so that the color of specular highlights matches the light's color.
+
+\section{Physically Based Rendering}
+A modern alternative to the Phong Lighting model is Physically Based Rendering (PBR).
+PBR is a lighting model that is designed to closely mimic light's behavior in the real world.
+There are several advantages to utilizing the PBR model instead of Phong Lighting and other
+non-physically based models. Firstly, materials created with PBR look correct regardless
+of the lighting conditions, whereas Phong materials do not. Secondly, artists can create
+materials by defining their physical properties instead of relying on their intuition \cite{learnopengl-pbr}\cite{ue-pbr}.
+
+PBR is based on the microfacet surface model. The idea is that rough surfaces can be represented
+as being comprised of many small surfaces, or microfacets, with differing normals. The normals
+are modeled by a statistical distribution, and their variance is determined by the roughness of the surface,
+i.e., as the roughness increases, so does the variance.
+Light's interaction with these microfacets depends on the chosen microfacet model. Usually, they
+are treated as perfect mirrors \cite{pbr-book-microfacet}.
+
+The PBR model has several points of customization, thus lending itself to highly divergent implementations.
+This thesis utilizes the PBR model developed by Epic Games
+for Unreal Engine 4 as described by Brian Karis in his SIGGRAPH presentation: Real Shading in
+Unreal Engine 4 \cite{ue-real-shading}.
+
+The primary focus of this thesis is on shader graphs as a tool for material creation.
+Therefore, the underlying mathematics of PBR and the specifics of its implementation are out of the scope
+of this thesis. What this section will prioritize instead is the PBR material model, which is more
+directly reflected in the shader graph.
+
+The first major difference between the Phong and PBR material models is that there is only one base color component.
+Ambient light does not exist in PBR, so material ambient color is pointless. Furthermore, specular color is not
+present either. Nevertheless, some PBR material models use specular as a scalar value. However, Unreal Engine 4's
+model does not. Brian Karis's presentation \cite{ue-real-shading} explains that the specular parameter
+was often misused and that material roughness should be utilized instead. As mentioned before, roughness controls
+how much the surface microfactes' normals vary. Higher roughness causes greater light diffusion. On the other
+hand, lower roughness results in prominent specular highlights.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/roughness_nonmetal.png}
+    \includegraphics[width=\textwidth]{images/roughness_metal.png}
+    \caption{Roughness values from 0 to 1. Nonmetal top, metal bottom \cite{ue-pbr}.}
+    \label{fig:roughness}
+\end{figure}
+
+Another crucial parameter of the PBR material model is metallic.
+It determines whether a material behaves as a metal or a dielectric.
+To achieve realism, it should predominately be treated as a binary parameter \cite{ue-pbr}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/metallic.png}
+    \caption{Metallic values from 0 (dielectric) to 1 (metal) \cite{ue-pbr}.}
+    \label{fig:metallic}
+\end{figure}
+
+The last material property is cavity. This was eventually replaced by the ambient occlusion parameter,
+which plays a similar role. Therefore, this thesis will use ambient occlusion instead of cavity.
+Ambient occlusion is used to simulate shadows present in small crevices or seams in a surface
+\cite{ue-real-shading}\cite{ue-material-inputs}.
 
 \chapter{Shader Graph}
 Having gone through the individual stages of the OpenGL rendering pipeline, it is clear that the process of creating and using
@@ -541,7 +612,7 @@ line of shader code. Instead of writing code, users can create desired effects v
 \cite{unity-shader-graph}. However, this approach also comes with a downside. The Godot documentation website
 \cite{godot-visual-shaders} states that visual shaders provide only a subset of shader features.
 With higher abstraction and a lack of low-level control, shader graphs have gaps that can only be filled
-by writing shaders manually. And that is, in most cases, acceptable. Shaders have limitless possibilities, but shader graphs simply
+by writing shaders manually. And that is, in most cases, acceptable. After all, shader graphs simply
 aim to fill the use case of approximating light's interaction with a surface.
 
 Shader graphs in modern game engines share a few core concepts. A shader graph loosely follows the structure of
@@ -556,12 +627,14 @@ of the resulting material (e.g., color, vertex position).
 Before diving into the implementation of the AGE shader graph, it is essential to get an overview of the existing solutions
 provided by popular modern game engines. According to the SlashData survey \cite{slashdata-game-engines},
 the most popular game engines are Unity, Unreal Engine, and Godot. All these engines are equipped with
-their own unique versions of the shader graph. Since the source code and design documents are not publicly
-available (except for Godot), this thesis explores the shader graphs purely from a user's perspective.
+their own unique versions of the shader graph. Since not all the source code is publicly
+available, this thesis explores the shader graphs purely from a user's perspective.
 
 All the game engines featured in this text provide tools for 2D game development. This includes separate versions
-of shader graphs for 2D effects and lighting. Nevertheless, because AGE is a purely 3D game engine, this thesis
-will examine exclusively 3D graphics features.
+of shader graphs for 2D effects and lighting. Nevertheless, because AGE is primarily a 3D game engine, this thesis
+will examine 3D graphics shader graph features. Regardless, creating a 2D game is still possible.
+That being said, adding quality-of-life features for 2D game development is an opportunity
+for future development in AGE.
 
 \subsection{Unity}
 The first game engine to explore is Unity. Unity is the most popular game engine in the world \cite{slashdata-game-engines}.
@@ -624,7 +697,8 @@ lighting model, the newly enabled inputs should be familiar: Base Color, Metalli
 Normal, Tangent, and Ambient Occlusion. Unlike Unity, Unreal Engine defines the Specular input not as the color of the
 specular highlights but as a scalar value determining the amount of reflection at a surface \cite{ue-material-inputs}.
 
-Unreal Engine's shader graph has a colossal Material Expressions library. On the Material Expressions Reference website
+Unreal Engine's shader graph has a colossal Material Expressions\footnote{Material Expressions are what Unreal Engine
+calls shader graph nodes.} library. On the Material Expressions Reference website
 \cite{ue-expr-reference}, there are 137 nodes listed in a \enquote{reference list of many, but not all, Material Expressions}.
 There are a few categories worth mentioning that do not appear in Unity's shader graph. Among them are landscape expressions
 for terrain materials, particle expressions, and font expressions.
@@ -632,7 +706,7 @@ for terrain materials, particle expressions, and font expressions.
 \subsection{Godot}
 The final game engine to explore is Godot. Compared to the other engines covered so far, Godot's documentation
 of its version of the shader graph feature is relatively scarce. On the other hand, it partly makes up for it
-with its excellent support for writing manual shaders. Nevertheless, a considerable amount of information in this section
+with its excellent support for writing shaders manually. Nevertheless, a considerable amount of information in this section
 is drawn from the actual program rather than the documentation.
 
 As was the case with both Unity and Unreal, Godot's shader graph changes based on the type of shader created.
@@ -643,27 +717,47 @@ Godot named its implementation of the shader graph concept \enquote{VisualShader
 In contrast to Unity and Unreal Engine, which share a similar philosophy when it comes to shader graphs,
 Godot's Visual Shaders bring a unique perspective. Visual Shaders more closely reflect the underlying
 rendering pipeline. To elaborate, the Visual Shader graph is split into three separate graphs:
-Vertex, Fragment, and Light. It is clear that the Vertex and Fragment graphs represent data used in the vertex
+Vertex, Fragment, and Light. It is clear that the Vertex and Fragment graphs represent data and logic used in the vertex
 and fragment shader calculations, similar to Unity's contexts.
 However, the Light graph provides a feature that is unique to Godot's shader graph.
 It allows users to create custom surface lighting. The code from the Lighting shader graph is then incorporated
 into the final fragment shader in the background. If the main Light graph node is untouched,
-Godot defaults to predefined lighting code \cite{godot-shaders-intro}.
+Godot defaults to predefined PBR lighting code \cite{godot-shaders-intro}.
 
 Because the vertex and fragment shader graphs are separated, data cannot be seamlessly shared between the stages.
 In order to share data between stages, varying variables must be used. For that reason, Godot provides
 VaryingGetter and VaryingSetter nodes. As for the other nodes in Godot's library, there is nothing standing
 out from the other engines.
 
+TODO: same effect in all engines?
+
+
+
 \chapter{The Academic Game Engine}
 The Academic Game Engine (AGE) is an academic project created at the Department of Visual Informatics
-at FI MU. At the moment, AGE is far from being usable as a game engine. It serves as a playground for students
+at FI MU. At the moment, AGE is in the early stage of development. It serves as a playground for students
 of the Game Development study program and a platform for writing theses such as this one.
 
 AGE is split into multiple repositories.
 The AGE Data repository contains assets useful for creating games, such as textures and fonts.
 The AGE Maker repository provides an application for building scenes. Finally, the AGE Libraries
-repository includes many libraries with valuable tools for game development organized into modules,
+repository includes the following libraries.
+
+\begin{itemize}
+    \item 
+    \item 
+    \item 
+    \item 
+    \item 
+    \item 
+    \item 
+\end{itemize}
+
+
+
+
+
+
 such as \textit{gfx} for rendering or \textit{osi} for input handling.
 The bulk of the implementation of this thesis takes place in the \textit{gfx} module.
 
@@ -683,8 +777,8 @@ This is where Glad \cite{glad} comes in. It generates bindings between the funct
 and their implementations provided by graphics drivers. This allows AGE to utilize OpenGL uniformly
 regardless of the underlying graphics hardware. OpenGL on its own is still too low-level
 for most practical use. That is why AGE uses SDL2 on top of OpenGL. The Simple DirectMedia Layer \cite{sdl}
-is a library written in C with native C++ support equipped with tools for cross-platform application
-development. SDL provides low-level input event handling and high-level window management which are features lacking in OpenGL
+is a library written in C with native C++ support, equipped with tools for cross-platform application
+development. SDL provides low-level input event handling and high-level window management, which are features lacking in OpenGL
 but crucial in game development.
 
 \section{Virtual Disk}
@@ -713,7 +807,7 @@ available instance of a class. It is an alternative to global variables \cite{si
 which expose their respective library's interface. The second class is \textit{Runner}. It also
 inherits from \textit{File}. Its instances contain instructions that should be executed
 in each iteration of the main application loop, such as rendering a scene. In the application
-attached to this thesis, the main runner is an instance of the \textit{Presenter} class
+attached to this thesis, the main runner is an instance of the \textit{Presenter} class,
 which inherits from \textit{Runner}.
 
 On top of the virtual disk data structure, AGE provides a built-in event system.
@@ -725,7 +819,7 @@ to create custom event callback functions.
 
 \section{Gfx Module}
 The main module used for rendering objects in AGE is \textit{gfx}.
-This is where the lion's share of this thesis' implementation took place. Users can interact with the
+This is where the lion's share of this thesis' implementation occurred. Users can interact with the
 \textit{gfx} module through its many library objects. As discussed in the previous section,
 these are singleton classes inheriting from the \textit{Library} class. There are many
 libraries in this module. This section will briefly cover the most essential ones.
@@ -786,7 +880,7 @@ Therefore, to gain an understanding of the specifics of the implementation,
 I recommend looking at the source code in files \textit{renderer.hpp} and \textit{renderer.cpp}.
 
 For an object to be rendered using the AGE rendering pipeline, it has to comply with a predefined
-directory structure as showcased in the previous section. Consequently, it is crucial to utilize
+directory structure, as showcased in the previous section. Consequently, it is crucial to utilize
 the Object System library to manage objects instead of manipulating the virtual disk directly.
 
 From a user's perspective, the basic rendering workflow has only two steps that have to be executed on each frame.
@@ -850,39 +944,59 @@ the idea is to first store all the information necessary for per-fragment lighti
 (e.g., normals, material color, etc.) in the GPU's memory. This stage is called the geometry pass. It sounds
 simple enough. However, there is a caveat. The intermediate data cannot be rendered into the default framebuffer.
 That is because the framebuffer expects to receive a single color value per pixel.
-This problem is solved by creating a dedicated geometry framebuffer (gBuffer) and attaching textures to it
+This problem is solved by creating a dedicated geometry framebuffer, called the gBuffer, and attaching textures to it
 that can store the lighting-relevant data for later use \cite{learnopengl-deferred}.
 
 Besides the lighting data, it is also necessary
-to store the depth values to be used in the depth test. This could be accomplished by creating another texture
-and attaching it to the new framebuffer. However, fragment depth is not relevant to lighting.
+to store the depth values to be used in the depth test. This could be accomplished by attaching another texture
+to the new framebuffer. However, fragment depth is not relevant to lighting.
 Therefore, the depth buffer will only be used for writing data, not reading it\footnote{The depth will not be read by user-defined shaders.
 However, it will still be read during the depth test.}. This provides an opportunity for optimization.
 Instead of using another texture, a special buffer object called the renderbuffer can be utilized as the new
 framebuffer's depth buffer. The advantage of this approach is that, unlike textures, the renderbuffer object is optimized for
 use as a render target \cite[p.526-540]{opengl-book} \cite{openglwiki-rbo}.
 
-After all the objects have been rendered by the geometry pass, only the fragments that will become
+After the geometry pass has rendered all the objects, only the fragments that will become
 the final pixels are present in the gBuffer. The next step is to compute the final colors of the pixels
 and store them in the default framebuffer, thus completing the lighting pass.
-This can be done by issuing a draw command that renders a single triangle
-spanning across the whole projection plane in clip space. Then, in the Fragment shader, the lighting is computed
-using the populated gBuffer textures \cite{learnopengl-deferred}.
+
+The simplest way to execute the lighting pass is by issuing a draw command that renders a single triangle
+spanning the whole projection plane in clip space. Then, in the Fragment shader, the lighting can be computed
+using the populated gBuffer textures. For each pixel, the contribution
+of all lights in the scene has to be accounted for, this leads to a time complexity of $\mathcal{O}(P\cdot L)$\footnote{This
+does not take into account the geometry pass. However, that is insignificant compared to the time spent on calculating lighting.},
+where $P$ is the number of pixels, and $L$ is the number of lights in a scene. This is technically
+more efficient than forward rendering that has a time complexity of $\mathcal{O}(F\cdot L)$, where $F$
+is the number of generated fragments. However, there is a better approach \cite{learnopengl-deferred}.
+
+A point light's influence on a fragment's color diminishes over distance. At some point, the light's
+contribution becomes imperceptible on a screen. This distance can be thought of as the light's radius.
+Therefore, iterating through all lights for each fragment can lead to a large amount of meaningless computation.
+This issue can be addressed by utilizing light volumes. Each point light in a scene is rendered as a sphere
+with a radius identical to the light's radius and the light at its center. The sphere's Fragment Shader
+then calculates only the light's contributions to pixels that are inside its radius. This leads
+to a time complexity of $\mathcal{O}(P + L)$. The light
+volumes must be rendered with blending enabled so that overlapping lights add up \cite{learnopengl-deferred}.
+
+The light volumes render only lighting associated with point lights. For directional lighting,
+another lighting pass is executed. This can take the form of the previously mentioned straightforward approach.
+Because there is usually a single directional light per scene, iterating through all lights per pixel
+is not problematic.
 
 The deferred shading technique is a great tool for efficiently rendering complex scenes. However, it does have its drawbacks.
 Firstly, some effects, such as alpha blending, cannot be achieved with deferred shading. That is because, by the time
 the final pixel color is to be computed, only a single fragment per pixel remains in the gBuffer. To achieve
 alpha blending in combination with deferred shading, the blended objects have to be rendered separately after
-the deferred shading pass, using forward shading. However, this requires the copying of the renderbuffer object depth
-buffer into the default framebuffer's depth buffer, in order to perform the depth test correctly. Another
+the deferred shading pass, using forward shading. However, this requires copying the renderbuffer object's depth
+buffer into the default framebuffer's depth buffer in order to perform the depth test correctly. Another
 disadvantage of the deferred shading method is the memory and buffer management overhead \cite{learnopengl-deferred}.
 
 In conclusion, deferred shading should only be used when rendering complex scenes with many light sources.
 For simple scenes, the disadvantages outweigh the benefits.
 
-Recommended Deferred mode usage is well documented in the Renderer header file. This section will focus on the inner workings
+Recommended Deferred mode usage is well documented in the Renderer header file. Therefore, this section will focus on the inner workings
 of the implementation. Before the per-frame operations begin,
-the Renderer creates the gBuffer and all the necessary textures/buffers. Then on each frame:
+the Renderer creates the gBuffer and all the necessary textures/buffers. Then, on each frame:
 \begin{enumerate}
     \item Clear all buffers and gBuffer textures.
     
@@ -891,7 +1005,9 @@ the Renderer creates the gBuffer and all the necessary textures/buffers. Then on
     \item Render the objects' data into the gBuffer. This follows the same structure as presented in the
     \verb|Renderer::present_object()| function explanation.
 
-    \item Gather all lights on the virtual disk associated with the rendered objects.
+    \item Gather all lights associated with the rendered objects\footnote{There is no way to determine
+    which pixels should be affected by which lights. Therefore, when rendering a scene with deferred rendering,
+    if a light is attached to a single object in the scene, then it affects all other objects as well.}.
 
     \item Bind the default framebuffer as the current framebuffer.
 
@@ -901,13 +1017,13 @@ the Renderer creates the gBuffer and all the necessary textures/buffers. Then on
 \end{enumerate}
 
 \subsection{Transparent Mode}
-The last available rendering mode is the Transparent mode. This mode is useful for rendering partially
+The last available rendering mode is the Transparent mode. This mode is dedicated to rendering partially
 transparent objects. Unlike the previous mode, the implementation is not nearly as complicated.
 Because it utilizes forward shading, it essentially follows the same structure as the Forward mode,
 but with a few extra steps.
 
 Transparent mode utilizes blending, which was already discussed in the OpenGL chapter.
-But to give a brief summary, blending is a feature of the OpenGL pipeline that
+But to give a summary, blending is a feature of the OpenGL pipeline that
 allows the colors of fragments corresponding to the same pixel in a framebuffer to be combined
 instead of being discarded \cite[p.251]{opengl-book}. With blending enabled,
 transparent objects' colors mix with the colors of the objects behind them.
@@ -940,16 +1056,21 @@ all their frames are gathered. Then, the frames are sorted based on the distance
 from their origins to the camera. Finally, the frames and their corresponding objects are drawn
 from furthest to closest.
 
-\section{Shader Graph}
-TODO: rewrite
+\chapter{The AGE Shader Graph}
+On top of the rendering pipeline foundation stands the AGE Shader Graph module.
+In the context of the AGE philosophy, the shader graph is represented as a single file.
+The inner workings of the shader code generation logic were conceived without outer inspiration.
+In contrast, the design process behind the AGE Shader Graph's public interface was predominantly influenced
+by the existing solutions provided by contemporary game engines.
 
-The previous sections objectively examined the most popular game engines and their unique versions of the shader graph.
+The Shader Graph chapter objectively examined the most popular game engines and their unique versions of the shader graph.
 Because user experience should be one of the top priorities when implementing a shader graph, and user experience
 comes down to subjective qualities, I will now share my personal opinion.
 
 Overall, when it comes to getting started with shader graphs and shader creation, I believe Unity's implementation
 is the best out of all the engines covered in this thesis. The visual separation of the output node into contexts
-explicitly determines which inputs belong to which shader stage. The main output node is not overcrowded with inputs.
+explicitly determines which inputs belong to which shader stage.
+The main output node is not overcrowded with inputs.
 The usage is intuitive and straightforward.
 
 Unreal Engine undeniably possesses superior graphics and a much broader spectrum of nodes. However, it can
@@ -959,26 +1080,290 @@ Godot's 3D rendering features and documentation are inferior to those of both Un
 and Visual Shaders are no exception. Though it provides a unique perspective on shader graphs,
 the low-level control does not outweigh the poor user experience.
 
+Besides the designs implemented by other game engines, there was another option to consider.
+Prior to this thesis, AGE had an outline
+of a shader graph that closely followed the structure of a manually written shader program.
+It was essentially the GLSL wrapped into graph nodes. It included constructs
+such as loops, if conditions, and built-in shader outputs. This type of shader graph
+is undoubtedly more powerful. However, it defeats the primary purpose of the shader graph concept.
+That is, quickly creating visual effects while avoiding writing low-level GLSL code.
+
+For these reasons, the AGE Shader Graph's public interface was partly inspired by Unity's version.
+Although the separation of AGE's Master Node into shader stages is not visible in the code,
+it has been written with it in mind in case a graphical interface for AGE is implemented
+in the future.
+
+\section{Shader Class Hierarchy}
+The AGE shaders are organized into a class hierarchy that consists of three classes: \textit{Shader},
+\textit{ShaderGraph}, and \textit{TextShader}. Before this thesis, the only type of shader in AGE
+was the outline of what would become the \textit{ShaderGraph} class. There are two reasons
+behind the creation of the \textit{TextShader} class. Firstly, the Performance Evaluation
+portion of this thesis uses manually written shaders to measure the shader graph's relative performance.
+Secondly, as mentioned before, shader graphs are inherently
+unable to fulfill the whole set of possibilities provided by handwritten shaders. Therefore,
+adding the \textit{TextShader} brings a broader spectrum of capabilities to AGE users.
+
+The \textit{Shader} class is the base of the hierarchy defining defines the common interface
+with which the \textit{gfx} libraries interact. This includes methods such as shader compilation,
+activation, and setting uniforms. The inheriting classes then extend this functionality
+and expose it to the user. The \textit{TextShader} class simply offers a mechanism for creating
+shaders out of strings. On the other hand, the \textit{ShaderGraph} class comes equipped
+with a node library and broad spectrum of tools for shader node creation and manipulation.
+
+\section{Graph Node}
+All the nodes in the AGE Shader Graph's node library follow the same pattern outlined
+in the \textit{Node} base class. At its core, a shader graph node represents a piece of shader code.
+However, from a user's perspective, a node is a collection of input and output slots. These slots
+can be connected to other nodes' slots, thus forming a shader graph. Each slot has a specific
+data type, which mirrors GLSL types.
+
+In AGE, for a pair of slots to be connected, their types have to match.
+This is not the case for all shader graphs. Some allow the bending of types.
+For example, in Godot, the albedo color input of the main output node has the type of a 3-component vector (\textit{vec3}).
+Yet, nodes of all vector, scalar, and even boolean types can be connected to it. Furthermore, these conversions
+have different behaviors. On conversion, a \textit{vec2} has a \verb|0.| appended to it, a \textit{vec4} loses
+its last component, a scalar's value is copied 3 times to form a \textit{vec3}, and a boolean is converted
+to scalar \verb|1.| or \verb|0.| and then follows the previous case. Except for the \textit{vec2} conversion,
+these are all valid ways to create a \textit{vec3} in the GLSL \cite{openglwiki-datatype}.
+This approach can lead to higher flexibility. However, it can also cause a lot of confusion and hidden errors.
+For this reason, the AGE Shader Graph implements a strict typing system.
+
+In shader graphs, it is crucial that logic defined in a node or a collection of nodes forming a subgraph
+is reusable. This is achieved by allowing output slots to be connected to multiple input slots.
+While that sounds perfectly reasonable, it can be quite problematic to implement efficiently.
+
+This brings up the next topic -- shader code generation. The AGE Shader Graph can be thought of as
+a directed acyclic graph with a single root node called the Master Node. The graph's edges are
+directed from input slots towards output slots. The root has no outputs, and the leaves have no inputs.
+When compiling a shader graph, the graph is traversed using the DFS 
+strategy starting from the root node. Each node overrides the \verb|add_code()| virtual method.
+This method is called when visiting a node to generate its piece of shader code.
+It is crucial to traverse the graph in postorder so that a node's code is added only after all its input nodes'
+code fragments are present.
+
+To inline or not to inline, that is the question. Inlining is an optimization technique
+implemented by modern compilers. A function that is to be inlined has all its invocations
+replaced by its body. At the beginning of the shader graph's implementation, a design
+decision was made to generate code without any inlining. Consequently, each node in the graph has its own
+variable with a unique name declared in the shader code. This variable is then
+referenced by any nodes that take the original node as input. On the one hand,
+the downside of this approach is that it leads to the creation of many variables consuming memory on the stack.
+Even a simple addition of two scalar values is stored in a separate variable. On the other hand,
+when a graph contains a component that is reused in many places (i.e., its output is connected to many inputs),
+the component's computation is executed only once. An example of a node that performs an expensive
+calculation is the matrix multiplication node. Instead of multiplying the same matrices in multiple
+places, the computation is performed once and stored in a variable for future use. Furthermore,
+this approach allows nodes to generate the same code regardless of what nodes are connected
+to their inputs. The predetermined variable names of input nodes are simply plugged into
+the node's code fragment.
+
+\section{Master Node}
+All the non-final nodes in the shader graphs explored by the game engine overview sections
+follow practically the same principles.
+The fundamental differences in the graphs lay in their main output nodes. In AGE, this node
+is called the Master Node. It has no output slots, and its input slots correspond to properties
+of the material created by the graph. The collection of input slots available in the Master Node
+determines the set of possible effects achievable by the shader graph.
+
+The AGE Shader Graph has five versions of the Master Node. A single Master Node
+is inserted by the graph's constructor based on the constructor's arguments.
+The constructor takes four arguments.
+\begin{itemize}
+    \item Name -- the file name passed to the \textit{ContextItem} constructor.
+    \item Lighting -- chooses the shading technique. This can be unlit, forward-lit, or deferred.
+    \item Lighting Model -- defaults to Phong but can be set to PBR. It has no effect if the shader is unlit.
+    \item Transparency -- defaults to opaque. It can be partial or threshold if the shader does not use
+    deferred shading.
+\end{itemize}
+
+Based on these inputs, a specific Master Node type is selected. The available Master Nodes are
+\textit{MasterNodeUnlit}, \textit{MasterNodeLit}, \textit{MasterNodeDeferred}, \textit{MasterNodePBR},
+and \textit{MasterNodeDeferredPBR}. Each provides a unique set of input slots.
+These inputs are listed and described in the Master Node definitions in the \textit{gfx} module.
+They should be self-explanatory after reading the Lighting chapter.
+Therefore, they will not be redundantly listed in this text.
+However, there are some noteworthy input slots that facilitate valuable effects.
+Firstly, the transparency input slots provide alpha blending and alpha clipping effects.
+These are enabled by selecting the partial or threshold transparency modes.
+Secondly, the fragment normal and ambient occlusion input slots accommodate the use of normal and ambient occlusion maps.
+These can add surface detail to objects without the overhead of a more detailed mesh.
+
+TODO: based on \cite{ue-real-shading}
+
+
+With the Master Node, the AGE Shader Graph aims to provide a set of features
+that matches the intersection of the functionality available in the modern shader graphs examined in this thesis.
+On top of that, it comes equipped with a built-in Phong lighting shader graph variant, which
+is not a standard feature in contemporary game engines.
+
+\section{Node Library}
+A shader graph's node library is a collection of nodes used to generate and transform
+data in a shader program. Having gone through the node libraries of a few contemporary game engines,
+it is apparent that it would take years to develop a portfolio of nodes that could be competitive
+with modern implementations\footnote{For example, Unreal Engine's Material Expressions Library comes equipped
+with over 130 nodes \cite{ue-expr-reference}.}.
+Therefore, AGE's node library contains only nodes that I find to be essential.
+
+Similar to the Unity, Unreal Engine, and Godot node libraries, the AGE node library is split into
+categories. The following is a brief overview of the available node categories\footnote{For a more
+detailed description of the categories and their corresponding nodes,
+consult the \textit{gfx} module header files.}.
+\begin{itemize}
+    \item Input Nodes -- provide data to the shader program. They include nodes such as Varying Position Node,
+    Texture Node, and Uniform Node.
+    \item Operator Nodes -- combine two or more inputs with an operator, such as addition, multiplication,
+    and subtraction.
+    \item Vector Utility Nodes -- are used to convert data between vector and scalar types (e.g., Decompose Vector Node).
+    \item Noise Generation Nodes -- act as a source of pseudo-randomness.
+    \item Logic Nodes -- their output is based on a condition.
+    \item Math Nodes -- supply math utilities (e.g., Sine Node).
+\end{itemize}
+
+\subsection{Input Nodes}
+The most complex nodes to implement are the Input Nodes. All other node types simply take their inputs,
+transform them in terms of GLSL code, and send the result to their output slots.
+Most Input Nodes do not have any input slots.
+Their main responsibility is to expose data usable by a shader program to the shader graph.
+This section will cover some crucial Input Nodes utilized frequently in all shader graphs.
+
+Firstly, there is the Uniform Node.
+This node is used to parameterize shaders, as explained in the Materials chapter.
+Uniform Nodes are managed by material instances. Each material has a \verb|uniforms/| folder
+containing files with values corresponding to the Uniform Nodes of the referenced shader graph.
+Upon material activation, the shader's uniforms are set based on the contents of the uniforms files.
+
+Then, there is the Texture Node. In contrast to other Input Nodes, it has an input slot that accepts texture coordinates.
+Texture Nodes are responsible for generating textures from image
+files and making them available to the shader program. The files are loaded asynchronously using the
+\textit{lfs::Loader} library. After the files are successfully loaded, the AGE event system triggers the texture generation.
+Then, during shader activation, each texture is assigned
+a texture unit, and its sampler uniforms are set accordingly.
+
+\subsection{Flexibility}
+Even with a few nodes in the node library, a broad spectrum of effects
+is achievable with the AGE Shader Graph. This is demonstrated by the examples showcased
+in the attached application. This section will establish the effectiveness of
+the AGE Shader Graph.
+
+Perhaps the most versatile node in the AGE Shader Graph is the Custom Function Node.
+It was designed to allow the user to create
+new nodes on-demand with minimal effort. To create a Custom Function Node,
+one has to specify the input names and types, the output type,
+and the GLSL code that computes the result. This code is then internally wrapped in a function
+whose arguments correspond to the given input names and types.
+The Custom Function Node is displayed in the Custom Function example in the attached application.
+There, it is utilized to perform a calculation with nested trigonometric functions,
+some of which are not available in the shader graph but are exposed by the GLSL.
+
+Many nodes in modern shader graphs do not add any functionality that is not
+attainable without them. They are there to facilitate common use cases
+and thus accelerate development. An example of such a node that is present
+in all discussed game engines is the remap node. It remaps a value
+from some range to a different range. Godot's version of this node can be seen in Figure \ref{fig:godot-remap-node}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=0.3\textwidth]{images/godot_remap_node.png}
+    \caption{Godot's Remap Node}
+    \label{fig:godot-remap-node}
+\end{figure}
+
+Even though this node is not present in AGE's node library, it can be easily recreated.
+The following C++ code shows how the remap node can be implemented with existing nodes.
+\begin{minted}{cpp}
+// x - input_min
+auto x_minus_in_min = shader->insert<SubtractNode>(SCALAR);
+// connect(dst_node, dst_slot, src_node, src_slot)
+shader->connect(x_minus_in_min, 0, x, 0);
+shader->connect(x_minus_in_min, 1, input_min, 0);
+// input_max - input_min
+auto in_range = shader->insert<SubtractNode>(SCALAR);
+shader->connect(in_range, 0, input_max, 0);
+shader->connect(in_range, 1, input_min, 0);
+// (x - input_min)/(input_max - input_min)
+auto normalized_x = shader->insert<DivideNode>(SCALAR);
+shader->connect(normalized_x, 0, x_minus_in_min, 0);
+shader->connect(normalized_x, 1, in_range, 0);
+// output_max - output_min
+auto out_range = shader->insert<SubtractNode>(SCALAR);
+shader->connect(out_range, 0, output_max, 0);
+shader->connect(out_range, 1, output_min, 0);
+// ((x - input_min)/(input_max - input_min))
+//     *(output_max - output_min)
+auto rescaled_x = shader->insert<MultiplyNode>(SCALAR);
+shader->connect(rescaled_x, 0, normalized_x, 0);
+shader->connect(rescaled_x, 1, out_range, 0);
+// ((x - input_min)/(input_max - input_min))
+//     *(output_max - output_min) + output_min
+auto remapped_x = shader->insert<AddNode>(SCALAR);
+shader->connect(remapped_x, 0, rescaled_x, 0);
+shader->connect(remapped_x, 1, output_min, 0);
+\end{minted}
+
+\subsection{Extensibility}
+The primary concern with the AGE node library's design is its extensibility.
+The node library is relatively limited. Therefore, it is crucial that more nodes
+can easily be added in the future. Apart from Input Nodes, which may require a deeper
+understanding of the shader code generation logic, creating new nodes is relatively
+simple. The following sequence of steps describes the recommended approach
+to node creation.
+\begin{enumerate}
+    \item Declare a new node class (or struct) in the \textit{ShaderGraph} class namespace
+    so that it is accessible through \\\verb|ShaderGraph::NewNode|.
+    \item Place the definition of the node class in the shader nodes header file.
+    \begin{enumerate}
+        \item[2.1.] It should inherit from the base \textit{Node} class or any other
+        fitting class in the hierarchy.
+        \item[2.2.] Define its constructor by calling the \textit{Node} constructor
+        with the node's name, description, and a list of input and output slots.
+        This should be done in the header file so all information
+        necessary for its usage is available there.
+        \item[2.3.] Override the \verb|Node::add_code()| method.
+        \item[2.4.] (Optional) If there are input slots
+        with distinct meanings\footnote{For example, this would be meaningless
+        when creating a simple addition node.}, define an input slot enum
+        so that it can be used for indexing input slots instead of integers.
+    \end{enumerate}
+    \item Place the definition of the overridden \verb|Node::add_code()| method
+    in the shader nodes source file.
+\end{enumerate}
+
 \chapter{Performance Evaluation}
+Besides evaluating the AGE Shader Graph module based on the set of achievable effects,
+it is crucial to consider performance as well. Specifically, the performance of the
+generated shaders. For this reason, the \textit{TextShader} class was created.
+It serves as a baseline for performance comparison. The primary focus of the evaluation
+is the application's frame rate measured in terms of frames per second (FPS).
+A secondary metric is the compilation time of the generated shaders.
 
-% \begin{figure}
-%     \centering
-%     \begin{tikzpicture}
-%         \begin{axis}[
-%             xlabel={Boxes},
-%             ylabel={FPS},
-%             ]
-%             \addplot [blue, mark=*] table [col sep=comma, x=boxes, y=text] {FPS/forward-cpu.csv};
-%             \addlegendentry{Text shader}
-%             \addplot [red, mark=*] table [col sep=comma, x=boxes, y=graph] {FPS/forward-cpu.csv};
-%             \addlegendentry{Graph shader}
-%         \end{axis}
-%     \end{tikzpicture}
-%     \caption{Forward rendering CPU FPS comparison}
-%     \label{fig:forward-cpu}
-% \end{figure}
+The measurement results presented in this chapter were generated by a partially automated
+process. There are instructions for their reproduction in the \verb|measuring-utils/README.md|
+file in the attached repository. The scenes used for benchmarking are also included in the
+examples in the attached application.
 
-\begin{figure}
+All measurements were conducted using a Lenovo ThinkPad T14s Gen 2i notebook running on
+the Fedora Linux 40 (Workstation Edition) 64-bit operating system.
+The notebook has an 11th Gen Intel® Core™ i7-1185G7 × 8 processor and an Intel® Xe Graphics (TGL GT2)
+graphics processor.
+
+
+\section{Frame Rate}
+Two separate frame rate metrics were considered in the shader graph's performance
+evaluation. These are FPS on the CPU and approximated FPS on the GPU.
+The CPU FPS metric corresponds to the frame rate of the whole application.
+It is measured via the \textit{osi::Timer} class.
+On the other hand, the GPU FPS metric approximates the GPU frame rate by taking into account only time
+spent on executing rendering commands. The GPU measurements are handled by the \textit{app::Presenter} class
+using OpenGL time queries. Both metrics take into account unstable start-up performance by discarding
+data measured during a predetermined number of warm-up iterations.
+
+The graphs in Figures \ref{fig:forward-cpu}-\ref{fig:deferred-PBR-gpu} depict the results of the
+measurements of the two metrics. In each graph, the performance of a shader generated by the
+AGE Shader Graph is compared to a manually written shader accomplishing the same exact effect.
+The performance is measured across a series of scenes with an increasing number of objects
+and point lights. The \enquote{Boxes} axis represents the number of objects in the scene,
+which is the same as the number of lights.
+
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
@@ -1002,7 +1387,7 @@ the low-level control does not outweigh the poor user experience.
     \label{fig:forward-cpu}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
@@ -1026,7 +1411,7 @@ the low-level control does not outweigh the poor user experience.
     \label{fig:forward-gpu}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
@@ -1050,7 +1435,7 @@ the low-level control does not outweigh the poor user experience.
     \label{fig:deferred-cpu}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
@@ -1074,7 +1459,7 @@ the low-level control does not outweigh the poor user experience.
     \label{fig:deferred-gpu}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
@@ -1098,7 +1483,7 @@ the low-level control does not outweigh the poor user experience.
     \label{fig:forward-PBR-cpu}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
@@ -1122,7 +1507,7 @@ the low-level control does not outweigh the poor user experience.
     \label{fig:forward-PBR-gpu}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
@@ -1146,7 +1531,7 @@ the low-level control does not outweigh the poor user experience.
     \label{fig:deferred-PBR-cpu}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}
         \begin{axis}[
@@ -1170,104 +1555,153 @@ the low-level control does not outweigh the poor user experience.
     \label{fig:deferred-PBR-gpu}
 \end{figure}
 
-\begin{figure}
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-        xlabel={Time in seconds},
-        ytick={1,2},
-        yticklabels={Graph, Text},
-        width=\textwidth,
-        height=.3\textwidth
-      ]
-      \addplot+[boxplot] table[y index=0] {compile/forward-graph-compile};
-      \addplot+[boxplot] table[y index=0] {compile/forward-text-compile};
-    \end{axis}
-  \end{tikzpicture}
-  \caption{Forward rendering shader compile time comparison}
-  \label{fig:forward-compile}
-\end{figure}
+The Figures \ref{fig:forward-cpu}-\ref{fig:deferred-PBR-gpu} clearly demonstrate that there is no significant decrease
+in performance between shader graphs and manually written shaders.
 
-\begin{figure}
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-        xlabel={Time in seconds},
-        ytick={1,2},
-        yticklabels={Graph, Text},
-        width=\textwidth,
-        height=.3\textwidth
-      ]
-      \addplot+[boxplot] table[y index=0] {compile/deferred-graph-compile};
-      \addplot+[boxplot] table[y index=0] {compile/deferred-text-compile};
-    \end{axis}
-  \end{tikzpicture}
-  \caption{Deferred rendering shader compile time comparison}
-  \label{fig:deferred-compile}
-\end{figure}
+\section{Compilation Time}
+The secondary metric in the performance evaluation is compilation time.
+Similar to the frame rate, the mean compilation times of generated and handwritten shaders accomplishing identical effects
+were compared. The results are depicted in Tables \ref{tab:forward-compile} and \ref{tab:deferred-compile}.
 
-\begin{figure}
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-        xlabel={Time in seconds},
-        ytick={1,2},
-        yticklabels={Graph, Text},
-        width=\textwidth,
-        height=.3\textwidth
-      ]
-      \addplot+[boxplot] table[y index=0] {compile/forward-PBR-graph-compile};
-      \addplot+[boxplot] table[y index=0] {compile/forward-PBR-text-compile};
-    \end{axis}
-  \end{tikzpicture}
-  \caption{Forward PBR shader compile time comparison}
-  \label{fig:forward-PBR-compile}
-\end{figure}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        Graph Phong & Text Phong & Graph PBR & Text PBR \\
+        \hline
+        0.0003s & 0.0002s & 0.0005s & 0.0005s \\
+        \hline
+    \end{tabular}
+    \caption{Forward rendering shader compilation times}
+    \label{tab:forward-compile}
+\end{table}
 
-\begin{figure}
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-        xlabel={Time in seconds},
-        ytick={1,2},
-        yticklabels={Graph, Text},
-        width=\textwidth,
-        height=.3\textwidth
-      ]
-      \addplot+[boxplot] table[y index=0] {compile/deferred-PBR-graph-compile};
-      \addplot+[boxplot] table[y index=0] {compile/deferred-PBR-text-compile};
-    \end{axis}
-  \end{tikzpicture}
-  \caption{Deferred PBR shader compile time comparison}
-  \label{fig:deferred-PBR-compile}
-\end{figure}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        Graph Phong & Text Phong & Graph PBR & Text PBR \\
+        \hline
+        0.0008s & 0.0005s & 0.0008s & 0.0010s \\
+        \hline
+    \end{tabular}
+    \caption{Deferred rendering shader compilation times}
+    \label{tab:deferred-compile}
+\end{table}
 
-\begin{figure}
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-        xlabel={Time in seconds},
-        ytick={1,2},
-        yticklabels={Graph, Text},
-        width=\textwidth,
-        % height=.3\textwidth
-      ]
-      \addplot+[boxplot] table[y index=0] {compile/forward-graph-compile};
-      \addplot+[boxplot] table[y index=0] {compile/forward-text-compile};
-      \addplot+[boxplot] table[y index=0] {compile/deferred-graph-compile};
-      \addplot+[boxplot] table[y index=0] {compile/deferred-text-compile};
-      \addplot+[boxplot] table[y index=0] {compile/forward-PBR-graph-compile};
-      \addplot+[boxplot] table[y index=0] {compile/forward-PBR-text-compile};
-      \addplot+[boxplot] table[y index=0] {compile/deferred-PBR-graph-compile};
-      \addplot+[boxplot] table[y index=0] {compile/deferred-PBR-text-compile};
-    \end{axis}
-  \end{tikzpicture}
-  \caption{Deferred PBR shader compile time comparison}
-  \label{fig:compile}
-\end{figure}
+The measurements show that there are no discernible performance differences between
+generated and handwritten shaders. However, shaders used for deferred rendering
+exhibit higher compile times in comparison to forward rendering shaders.
+This is likely due to the fact that deferred rendering requires multiple shaders to be compiled.
+
+
+\chapter*{Conclusion}
+\markright{\textsc{Conclusion}}
+\addcontentsline{toc}{chapter}{Conclusion}
 
 \appendix %% Start the appendices.
-\chapter{An appendix}
-Here you can insert the appendices of your thesis.
+\chapter{Tessellation}\label{app:tessellation}
+Dr. Paone's article on tessellation \cite{openglwiki-tessellation} thoroughly demonstrates the primary use case of tessellation
+shaders through a rendering exercise. Consider the rendering of a vast,
+high-resolution terrain represented by a triangle mesh. In order to achieve a high-quality render,
+This terrain would typically need to be stored as millions of vertices.
+The problem is that rendering that many vertices in every frame can heavily impact performance. Furthermore, a
+considerable amount of the detailed render is wasted because it is too far from the camera to be
+noticeable. Altogether, these performance issues can be discouraging.
+This is where tessellation comes in. Instead of a high-resolution terrain mesh, it is more
+efficient to use a low-resolution mesh and dynamically add detail on the GPU by using tessellation
+shaders. In this case, the amount of detail added will depend on the distance of each group of
+vertices from the camera. Consequently, parts of the mesh that are far away from the camera will
+remain low-resolution, and the closer ones will keep their desired detail. This optimization results in
+a drastic performance boost while preserving the quality of the rendered terrain \cite{learnopengl-tessellation}.
+
+The OpenGL tessellation process is split into three stages: the Tessellation Control Shader (TCS), a
+fixed-function tessellator, and the Tessellation Evaluation Shader (TES). In the OpenGL rendering
+pipeline, tessellation is optional and is considered active only if the TES is
+deployed. Therefore, the TCS can only run when the TES is involved \cite{openglwiki-tessellation}.
+
+The first tessellation stage is the TCS. This stage is programmable but can be
+omitted and replaced with a default implementation. The primary responsibilities of the Tessellation
+Control Shader are setting the tessellation level (i.e., how much tessellation to do), specifying patch
+size, and forwarding patch data to the TES \cite{openglwiki-tcs}.
+
+The TCS is executed on each vertex provided by the Vertex Shader. The TCS
+runs are then grouped into their vertices' corresponding patches. As a result, the shader invocations
+that fall into the same patch can communicate and read all vertex data within the patch \cite{openglwiki-tcs}.
+
+The next stage of the tessellation process is the fixed-function tessellator. This stage is not
+programmable, however, it provides three distinct tessellation algorithms based on the chosen
+tessellation primitive. The core responsibility of the tessellator is to subdivide patches of vertices
+into smaller segments by generating new intermediate vertices, thus producing a more detailed
+mesh \cite{openglwiki-tessellation}.
+
+The tessellator does not rely on the vertex data specified by the TCS or the
+Vertex Shader. Its behavior only depends on the tessellation levels and primitives specified in the
+TCS and TES. The tessellation levels define the extent of the patch segmentation, i.e.,
+how many vertices to add. On the other hand, tessellation primitives dictate the shape of the
+resulting patch. There are three tessellation primitives available: triangles, quads (squares), and
+isolines, which are series of horizontal lines that fit into a square patch. The resulting relative vertex
+positions are then passed on to the TES \cite{openglwiki-tessellation}.
+
+The last stage of the OpenGL tessellation process is the TES. Similar to the
+TCS, the TES is invoked for each vertex but can read data from the whole
+patch. By the time the TES is executed, most of the heavy lifting has already been done by the fixed-function tessellator. For that reason, this shader tends to be relatively simple \cite{openglwiki-tessellation}.
+
+Because the presence of the TES is the only requirement for activating the tessellation process, the
+TES first needs to specify the tessellation primitive to be used by the tessellator. The TES then
+receives the vertex data as input from the Vertex Shader or the optional TCS.
+Besides that, the tessellated vertex coordinates produced by the tessellator are passed via the built-in variable \verb|gl_TessCoord|. The core responsibility of the TES is then to interpolate between
+the patch control points using the relative tessellated vertex coordinates and produce absolute vertex
+coordinates in clip space. Notice that this transformation to clip space would typically be done by
+the Vertex Shader. In order to achieve uniform tessellation (i.e., without perspective bias),
+the vertex coordinates should not be transformed to clip space by the Vertex Shader,
+although they may be in any of the object, world, or view spaces
+\cite{learnopengl-tessellation}\cite{openglwiki-tessellation}.
+
+\chapter{Transform Feedback}\label{app:transform-feedback}
+One of the most intriguing use cases of Transform Feedback is efficiently rendering large-scale particle systems on the GPU.
+The solution for the problem of particle simulation is incredibly relevant to modern graphics. From water simulation
+to explosions and smoke, particle systems have grown to be exceedingly popular in state-of-the-art games. Therefore,
+most modern game engines have implemented solutions for custom particle systems generation.
+
+In the OGLdev tutorial series on modern OpenGL, Etay Meiri \cite{ogl-particle-system} dives deep into the practical
+side of Transform Feedback. He demonstrates its use by implementing a fireworks simulation computed on the GPU.
+Without Transform Feedback, particle simulation would have to be computed for each frame in the following way:
+\begin{enumerate}
+    \item On the CPU, modify vertex data by computing the next step of the simulation (e.g., apply gravity to particles).
+    \item Send the vertex data to the GPU.
+    \item Execute a draw command.
+\end{enumerate}
+This approach has one obvious flaw. Sending data representing potentially millions of particles from the CPU to the GPU
+is terribly expensive. The solution is to use Transform Feedback to compute the simulation steps on the GPU and store
+the result in a buffer, which can later be used to render an image. OpenGL has one limitation that makes this method
+a bit more convoluted. OpenGL does not allow for a buffer to be both written into and read out of in a single draw command.
+To solve this problem, Etay Meiri \cite{ogl-particle-system} introduces a second vertex buffer.
+Then, the computation taking place in each frame looks like this:
+\begin{enumerate}
+    \item Activate Transform Feedback and bind buffer \textbf{A} as the Feedback
+    buffer (i.e., the one the data is stored back into).
+
+    \item Invoke a drawing command to render data from buffer \textbf{B} with Transform Feedback activated
+    and rasterization disabled. This can be done with \verb+glEnable(GL_RASTERIZER_DISCARD)+.
+    \begin{enumerate}
+        \item[2.1.] Using a Vertex Shader, modify vertex data by computing the next step of the simulation.
+        
+        \item[2.2.] Transform Feedback stores the updated data in buffer \textbf{A} without rendering it.
+    \end{enumerate}
+    
+    \item Disable Transform Feedback and enable rasterization.
+    
+    \item Render vertex data from buffer \textbf{B} using a different shader program intended for rendering.
+    
+    \item Swap buffers.
+\end{enumerate}
+This approach has two substantial benefits. Firstly, it eliminates the need to send data from the CPU to the GPU
+on every frame. It has to be done only at the beginning of the simulation. Secondly, it takes advantage of the
+massive parallelism available on the GPU to accelerate the update of large amounts of particles. Even if the simulation
+is parallelized to run on multiple cores of the CPU, it still falls short of the GPU's parallel computing capabilities.
+
+Even though the implementation of particle systems is not a part of this thesis,
+it is a great opportunity for the future development of AGE.
 
 \end{document}
